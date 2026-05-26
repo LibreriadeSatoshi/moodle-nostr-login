@@ -130,7 +130,8 @@ unset($SESSION->auth_nostr_nonce, $SESSION->auth_nostr_nonce_time);
 
 // ── Find or create the Moodle user ────────────────────────────────────────────
 $pubkey_hex = $event['pubkey'];
-$username   = 'nostr_' . substr($pubkey_hex, 0, 16);
+$npub       = nostr_event::pubkey_to_npub($pubkey_hex);
+$username   = $npub;
 
 $user = $DB->get_record('user', [
     'username'   => $username,
@@ -151,8 +152,7 @@ if (!$user) {
         $firstname = trim($metadata['display_name'] ?? $metadata['name'] ?? '');
     }
     if ($firstname === '') {
-        // Fallback: human-readable npub abbreviation.
-        $firstname = substr($pubkey_hex, 0, 8) . '…' . substr($pubkey_hex, -4);
+        $firstname = nostr_event::pubkey_to_npub_short($pubkey_hex);
     }
 
     $newuser               = new stdClass();
@@ -160,7 +160,7 @@ if (!$user) {
     $newuser->username     = $username;
     $newuser->firstname    = $firstname;
     $newuser->lastname     = 'Nostr';
-    $newuser->email        = $username . '@' . parse_url($CFG->wwwroot, PHP_URL_HOST);
+    $newuser->email        = $npub . '@' . parse_url($CFG->wwwroot, PHP_URL_HOST);
     $newuser->emailstop    = 1;
     $newuser->confirmed    = 1;
     $newuser->mnethostid   = $CFG->mnet_localhost_id;

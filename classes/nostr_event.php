@@ -66,6 +66,14 @@ class nostr_event {
     }
 
     /**
+     * Return a shortened npub for display: npub1xxxxxxxx…yyyy
+     */
+    public static function pubkey_to_npub_short(string $hex): string {
+        $npub = self::pubkey_to_npub($hex);
+        return substr($npub, 0, 13) . '…' . substr($npub, -4);
+    }
+
+    /**
      * Convert a hex-encoded 32-byte public key to its npub (bech32) representation (NIP-19).
      */
     public static function pubkey_to_npub(string $hex): string {
