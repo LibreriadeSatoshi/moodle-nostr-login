@@ -140,11 +140,12 @@ On first login with a new Nostr key, Moodle automatically creates an account:
 
 | Field | Value |
 |---|---|
-| `username` | `nostr_` + first 16 hex chars of pubkey |
-| `firstname` | `display_name` or `name` from Nostr kind-0 profile, or `abc12345…ef12` fallback |
-| `lastname` | *(empty)* |
-| `email` | `nostr_{hex16}@{your-moodle-domain}` |
+| `username` | Full npub — e.g. `npub1e2ywrmv…` |
+| `firstname` | `display_name` or `name` from Nostr kind-0 profile, or shortened npub `npub1e2ywrmvx…whnz` as fallback |
+| `lastname` | `Nostr` |
+| `email` | `{npub}@{your-moodle-domain}` |
 | `idnumber` | Full hex pubkey (for future account linking) |
+| `nostrpubkey` profile field | Full npub (visible on public profile) |
 
 Auto-creation can be disabled in the plugin settings, allowing only pre-existing accounts to log in via Nostr.
 
@@ -176,11 +177,14 @@ auth/nostr/
 │       └── auth_nostr.php        # English strings
 ├── classes/
 │   ├── schnorr.php               # BIP340 Schnorr verification (pure PHP/GMP)
-│   ├── nostr_event.php           # Event ID + signature verification
+│   ├── nostr_event.php           # Event ID, signature verification, npub encoding
 │   └── privacy/
 │       └── provider.php          # Moodle Privacy API
 ├── db/
-│   └── install.php               # Creates "Nostr Public Key" profile field
+│   └── install.php               # Creates "Nostr Identity" profile field
+├── tests/
+│   ├── test_security.py          # Python security test suite (pytest)
+│   └── requirements.txt          # requests, pytest
 └── amd/
     ├── src/
     │   └── nostr_login.js        # Source: NIP-07 + NIP-98 client logic
@@ -227,6 +231,35 @@ npx grunt amd --plugin=auth_nostr
 ```
 
 Or manually update `amd/build/nostr_login.min.js` (a single-file define() module).
+
+### Security tests
+
+The test suite hits the live `login.php` endpoint and verifies every rejection path.
+No Moodle-specific tooling required — just Python.
+
+```bash
+pip install -r tests/requirements.txt
+pytest tests/test_security.py -v
+```
+
+To run against a non-local instance:
+
+```bash
+MOODLE_URL=https://staging.example.com pytest tests/test_security.py -v
+```
+
+| Category | Cases |
+|---|---|
+| Happy path | Valid login, login with kind-0 metadata |
+| Replay protection | Nonce reuse, expired event (>60 s), future event |
+| Signature verification | Zeroed sig, tampered ID, wrong pubkey, sig from different key |
+| Protocol checks | No prior challenge, wrong nonce, wrong URL tag, wrong method/kind, GET on POST endpoint |
+| Input validation | Empty body, non-JSON, missing `event` field, missing `sig`/`id` |
+
+The pure-Python BIP340 Schnorr implementation inside the test file has no external
+crypto dependencies — `requests` and `pytest` are the only packages required.
+
+---
 
 ### Key files for contributors
 
