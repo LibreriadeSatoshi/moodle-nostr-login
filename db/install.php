@@ -38,8 +38,8 @@ function xmldb_auth_nostr_install() {
     $field->signup       = 0;
     $field->defaultdata  = '';
     $field->defaultdataformat = FORMAT_PLAIN;
-    $field->param1       = 64; // max length
-    $field->param2       = 30; // display size
+    $field->param1       = 70; // max length (npub = 63 chars)
+    $field->param2       = 63; // display size
     $field->param3       = '';
     $field->param4       = '';
     $field->param5       = '';
